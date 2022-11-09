@@ -1,12 +1,6 @@
 use anyhow::Result;
-use rdqs::{
-    client::{Client, ClientError, Redis},
-    queue::Queue,
-    queue_job,
-    worker::Worker,
-};
+use rdqs::{client::Client, connection::Redis, queue::Queue};
 use serde::{Deserialize, Serialize};
-use tokio::time::Duration;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Foo {
@@ -14,28 +8,19 @@ pub struct Foo {
     baz: u32,
 }
 
-#[queue_job]
-async fn on_foo_event(msg: Foo) -> Result<(), String> {
-    println!("{:?} vai krl", msg);
-    tokio::time::sleep(Duration::from_millis(100)).await;
-    Ok(())
-}
-
 #[tokio::main]
 async fn main() -> Result<()> {
     let client: Client<Redis> = Client::new(None);
-    client
-        .connect()
-        .await
-        .map_err(|e: ClientError| println!("error {:?}", e))
-        .unwrap();
+    let con = client.connect().await.unwrap();
     println!("{:?}!", client);
+    println!("{:?}!", con);
 
     let queue = Queue::new("foo".to_string(), None, None);
 
-    let mut worker = Worker::new();
-
-    worker.register_queue_job(&queue, on_foo_event);
-
+    let message = Foo { bar: 10, baz: 10 };
+    queue
+        .publish_job(con, message, serde_json::Value::Null)
+        .await
+        .map_err(|_e| {})?;
     Ok(())
 }

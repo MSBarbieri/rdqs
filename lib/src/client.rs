@@ -1,4 +1,4 @@
-use async_trait::async_trait;
+use crate::connection::{Connection, ConnectionError, ConnectionType, Redis, RedisSettings};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ClientError {
@@ -6,71 +6,8 @@ pub enum ClientError {
     LimitExeeded,
 }
 
-pub(crate) trait ClientTypeSettigns {}
-
-#[async_trait]
-pub trait ClientType {
-    async fn connect(&self) -> Result<(), ClientError> {
-        self.valitate_connection_config()?;
-
-        Ok(())
-    }
-    fn valitate_connection_config(&self) -> Result<(), ClientError>;
-}
-
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Client<T: ClientType>(T);
-
-///
-/// Redis Config
-///
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RedisSettings {
-    url: String,
-}
-
-impl Default for RedisSettings {
-    fn default() -> Self {
-        RedisSettings {
-            url: "127.0.0.1:5643".to_string(),
-        }
-    }
-}
-
-impl ClientTypeSettigns for RedisSettings {}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Redis {
-    opts: Box<RedisSettings>,
-}
-
-impl Redis {
-    fn new(opts: Option<Box<RedisSettings>>) -> Self {
-        let opts = opts.unwrap_or_default();
-        Redis { opts }
-    }
-}
-
-impl Default for Redis {
-    fn default() -> Self {
-        Redis {
-            opts: Box::new(RedisSettings::default()),
-        }
-    }
-}
-
-impl ClientType for Redis {
-    fn valitate_connection_config(&self) -> Result<(), ClientError> {
-        if self.opts.url.is_empty() {
-            return Err(ClientError::ClientOptionsInvalid(
-                "validation dont exist".to_string(),
-            ));
-        }
-
-        Ok(())
-    }
-}
+pub struct Client<T: ConnectionType>(T);
 
 impl Client<Redis> {
     pub fn new(opts: Option<Box<RedisSettings>>) -> Client<Redis> {
@@ -78,8 +15,7 @@ impl Client<Redis> {
         Self(_client)
     }
 
-    pub async fn connect(&self) -> Result<(), ClientError> {
-        let mut con = self.0.connect().await?;
-        Ok(())
+    pub async fn connect(&self) -> Result<Box<dyn Connection>, ConnectionError> {
+        self.0.connect().await
     }
 }

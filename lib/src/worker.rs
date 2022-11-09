@@ -30,4 +30,7 @@ impl Worker {
         };
         self.map.insert(path, _cb);
     }
+    pub fn start(&self) -> Result<(), String> {
+        todo!()
+    }
 }

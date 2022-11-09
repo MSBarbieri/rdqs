@@ -1,6 +1,8 @@
 use std::marker::PhantomData;
 
 use serde::Serialize;
+
+use crate::connection::Connection;
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum QueueEvents {
     Published,
@@ -24,7 +26,13 @@ impl Queue {
         Queue { name, prefix, opts }
     }
 
-    pub fn publish_job<T: Serialize>(message: T) -> Result<QueueEvents, QueueErrors> {
+    pub async fn publish_job<T: Serialize>(
+        &self,
+        con: Box<dyn Connection>,
+        message: T,
+        opts: serde_json::Value,
+    ) -> Result<QueueEvents, QueueErrors> {
+        // serde_json::to_string(message);
         todo!()
     }
 }

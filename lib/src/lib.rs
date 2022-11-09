@@ -1,4 +1,5 @@
 pub mod client;
+pub mod connection;
 pub mod queue;
 pub mod worker;
 pub use rdqs_macro::*;
